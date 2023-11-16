@@ -1,6 +1,7 @@
 package bwt
 
 import (
+	"errors"
 	"math/rand"
 	"strings"
 	"testing"
@@ -137,11 +138,19 @@ func BenchmarkMapCompleteAlphaOopsAllMistakes(b *testing.B) {
 func BaseBenchmarkMap(b *testing.B, testStrs []string) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(testStrs); i++ {
-			for _, c := range testStrs[i] {
-				_, _ = allowedChars[c]
-			}
+			Hash2FragmentMap(testStrs[i])
 		}
 	}
+}
+
+//go:noinline
+func Hash2FragmentMap(input string) error {
+	for _, char := range input {
+		if !allowedChars[char] {
+			return errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: " + string(char))
+		}
+	}
+	return nil
 }
 
 func BenchmarkContainsSmallAlphaWithNoMistakes(b *testing.B) {
@@ -190,9 +199,17 @@ func BenchmarkContainsCompleteAlphaOopsAllMistakes(b *testing.B) {
 func BaseBenchmarkContains(b *testing.B, testStrs []string) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(testStrs); i++ {
-			for j := 0; j < len(testStrs[i]); j++ {
-				strings.Contains("ATUGCYRSWKMBDHVNZ", string(testStrs[i][j]))
-			}
+			Hash2FragmentContains(testStrs[i])
 		}
 	}
+}
+
+//go:noinline
+func Hash2FragmentContains(input string) error {
+	for _, char := range input {
+		if !strings.Contains("ATUGCYRSWKMBDHVNZ", string(char)) {
+			return errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: " + string(char))
+		}
+	}
+	return nil
 }
