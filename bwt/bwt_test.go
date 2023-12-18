@@ -61,6 +61,7 @@ func TestBWT_Count(t *testing.T) {
 		{"@", 0},
 		{"clown", 0},
 		{"overtly", 0},
+		{"", 340},
 	}
 
 	for _, v := range testTable {
@@ -70,16 +71,6 @@ func TestBWT_Count(t *testing.T) {
 		}
 		if count != v.expected {
 			t.Fatalf("seq=%s expectedCount=%v actualCount=%v", v.seq, v.expected, count)
-		}
-	}
-
-	for _, v := range testTable {
-		count, err := bwt.CountV2(v.seq)
-		if err != nil {
-			t.Fatalf("V2 seq=%s unexpectedError=%s", v.seq, err)
-		}
-		if count != v.expected {
-			t.Fatalf("V2 seq=%s expectedCount=%v actualCount=%v", v.seq, v.expected, count)
 		}
 	}
 }
@@ -117,15 +108,26 @@ func TestBWT_Locate(t *testing.T) {
 
 	testTable := []BWTLocateTestCase{
 		{"uick", []int{4, 117, 230}},
-		{"the", []int{0, 25, 113, 138, 226, 251}},
 		{"over", []int{21, 41, 134, 154, 247, 267}},
 		{"own", []int{10, 48, 106, 110, 123, 161, 219, 223, 236, 274, 332, 336}},
 		{"ana", []int{87, 89, 200, 202, 313, 315}},
 		{"an", []int{39, 87, 89, 152, 200, 202, 265, 313, 315}},
 		{"na", []int{50, 88, 90, 163, 201, 203, 276, 314, 316}},
 		{"rown", []int{9, 47, 122, 160, 235, 273}},
+		{"frown", []int{46, 159, 272}},
+		{"brown", []int{8, 121, 234}},
+		{"all", []int{70, 96, 183, 209, 296, 322}},
+		{"alle", []int{70, 183, 296}},
+		{"alla", []int{96, 209, 322}},
+		{"l", []int{28, 60, 71, 72, 74, 97, 98, 141, 173, 184, 185, 187, 210, 211, 254, 286, 297, 298, 300, 323, 324}},
+		{"the", []int{0, 25, 113, 138, 226, 251}},
+		{"town", []int{109, 222, 335}},
 		{"townthe", []int{109, 222}},
+		{"nt", []int{108, 112, 221, 225, 334}},
 		{"zzz", nil},
+		{"@", nil},
+		{"clown", nil},
+		{"overtly", nil},
 	}
 
 	for _, v := range testTable {

@@ -182,9 +182,6 @@ type BWT struct {
 	// represented as a list of skipEntries because the first column of
 	// the BWT is always lexicographically ordered. This saves time and memory.
 	firstColumnSkipList []skipEntry
-	// Column last column of the BWT- the actual textual representation
-	// of the BWT.
-	lastCoulmn waveletTree
 	// suffixArray an array that allows us to map a position in the first
 	// column to a position in the original sequence. This is needed to be
 	// able to extract text from the BWT.
@@ -277,14 +274,39 @@ func (bwt BWT) lfSearch(pattern string) interval {
 		}
 
 		c := pattern[len(pattern)-1-i]
-		skip, ok := bwt.lookupSkipByChar(c)
-		if !ok {
-			return interval{}
-		}
-		searchRange.start = skip.openEndedInterval.start + bwt.lastCoulmn.Rank(c, searchRange.start)
-		searchRange.end = skip.openEndedInterval.start + bwt.lastCoulmn.Rank(c, searchRange.end)
+		nextStart := bwt.getNextLfSearchOffset(c, searchRange.start)
+		nextEnd := bwt.getNextLfSearchOffset(c, searchRange.end)
+		searchRange.start = nextStart
+		searchRange.end = nextEnd
 	}
 	return searchRange
+}
+
+func (bwt BWT) getNextLfSearchOffset(c byte, offset int) int {
+	r := bwt.b.Rank(offset + 1)
+	pv := bwt.s.Rank(c, r)
+
+	s1, ok := bwt.lookupSkipByChar(c)
+	if !ok {
+		return 0
+	}
+
+	runInfoForChar, ok := bwt.bPrime[string(c)]
+	if !ok {
+		return 0
+	}
+
+	s2 := runInfoForChar.Select(pv)
+
+	cr := bwt.b.Rank(offset)
+	cc := string(bwt.s.Access(cr))
+	extraOffset := 0
+	if c == cc[0] {
+		o := bwt.b.Select(r)
+		extraOffset += offset - o
+	}
+
+	return s1.openEndedInterval.start + s2 + extraOffset
 }
 
 // lookupSkipByChar looks up a skipEntry by its character in the First Column
@@ -314,7 +336,7 @@ func (bwt BWT) lookupSkipByOffset(offset int) skipEntry {
 			return bwt.firstColumnSkipList[i]
 		}
 	}
-	panic("figure out what to do here")
+	panic("Unable to find skip list entry by offset. This indicates improper usage or a malformed BWT.")
 }
 
 func (bwt BWT) getLenOfOriginalStringWithNullChar() int {
@@ -350,11 +372,7 @@ func New(sequence string) (BWT, error) {
 
 	sortPrefixArray(prefixArray)
 
-	// OLD
 	suffixArray := make([]int, len(sequence))
-	lastColBuilder := strings.Builder{}
-
-	// NEW
 	charCount := 0
 	sBuilder := strings.Builder{}
 	var b runInfo
@@ -378,8 +396,6 @@ func New(sequence string) (BWT, error) {
 		}
 
 		charCount++
-		// OLD
-		lastColBuilder.WriteByte(currChar)
 		suffixArray[i] = len(sequence) - len(prefixArray[i])
 	}
 	sBuilder.WriteByte(*prevChar)
@@ -393,14 +409,8 @@ func New(sequence string) (BWT, error) {
 
 	skipList := buildSkipList(prefixArray)
 
-	// // TODO: do this more gracefully?
-	// // Pad the end of b Prime so we can do max select queries with expected cumulative counts
-	// for _, v := range skipList {
-	// 	addBPrimeEntry(bPrime, v.char, 0)
-	// }
 	return BWT{
 		firstColumnSkipList: skipList,
-		lastCoulmn:          NewWaveletTreeFromString(lastColBuilder.String()),
 		suffixArray:         suffixArray,
 
 		s:      NewWaveletTreeFromString(sBuilder.String()),
@@ -512,58 +522,6 @@ func (r runInfo) Rank(startPos int) int {
 	}
 
 	return start
-}
-
-// CountV2 represents the number of times the provided pattern
-// shows up in the original sequence.
-func (bwt BWT) CountV2(pattern string) (count int, err error) {
-	defer bwtRecovery("Count", &err)
-
-	searchRange := bwt.lfSearchV2(pattern)
-	return searchRange.end - searchRange.start, nil
-}
-
-func (bwt BWT) lfSearchV2(pattern string) interval {
-	searchRange := interval{start: 0, end: bwt.getLenOfOriginalStringWithNullChar()}
-	for i := 0; i < len(pattern); i++ {
-		if searchRange.end-searchRange.start <= 0 {
-			return interval{}
-		}
-
-		c := pattern[len(pattern)-1-i]
-		nextStart := bwt.getNextLfSearchOffset(c, searchRange.start)
-		nextEnd := bwt.getNextLfSearchOffset(c, searchRange.end)
-		searchRange.start = nextStart
-		searchRange.end = nextEnd
-	}
-	return searchRange
-}
-
-func (bwt BWT) getNextLfSearchOffset(c byte, offset int) int {
-	r := bwt.b.Rank(offset + 1)
-	pv := bwt.s.Rank(c, r)
-
-	s1, ok := bwt.lookupSkipByChar(c)
-	if !ok {
-		return 0
-	}
-
-	runInfoForChar, ok := bwt.bPrime[string(c)]
-	if !ok {
-		panic("better messaging no b prime")
-	}
-
-	s2 := runInfoForChar.Select(pv)
-
-	cr := bwt.b.Rank(offset)
-	cc := string(bwt.s.Access(cr))
-	extraOffset := 0
-	if c == cc[0] {
-		o := bwt.b.Select(r)
-		extraOffset += offset - o
-	}
-
-	return s1.openEndedInterval.start + s2 + extraOffset
 }
 
 func (bwt BWT) reconstructFColumn() string {
