@@ -132,6 +132,7 @@ func TestWaveletTree_Select(t *testing.T) {
 	wt := NewWaveletTreeFromString(testStr)
 
 	testCases := []WaveletTreeSelectTestCase{
+		{"@", 0, 0},
 		{"A", 0, 0},
 		{"A", 1, 1},
 		{"A", 2, 2},
@@ -144,6 +145,7 @@ func TestWaveletTree_Select(t *testing.T) {
 		{"T", 4, 18},
 		{"G", 4, 19},
 
+		{"@", 5, 0},
 		{"T", 5, 20},
 		{"G", 5, 21},
 		{"C", 5, 22},
@@ -159,6 +161,8 @@ func TestWaveletTree_Select(t *testing.T) {
 
 		{"G", 8, 32},
 		{"A", 11, 47},
+
+		{"@", 200, 0},
 	}
 
 	for _, tc := range testCases {
@@ -169,6 +173,7 @@ func TestWaveletTree_Select(t *testing.T) {
 	}
 }
 
+// If we can fully reconstruct the original string, we can have a high degree of confidence that it was built correctly.
 func TestWaveletTree_Access_Reconstruction(t *testing.T) {
 	enhancedQuickBrownFox := "the quick brown fox jumps over the lazy dog with an overt frown after fumbling its parallelogram shaped bananagram all around downtown"
 	enhancedQuickBrownFoxRepeated := strings.Join([]string{enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox}, " ")
@@ -186,10 +191,7 @@ func TestWaveletTree_Access_Reconstruction(t *testing.T) {
 
 	for _, str := range testCases {
 		wt := NewWaveletTreeFromString(str)
-		actual := ""
-		for i := 0; i < len(str); i++ {
-			actual += string(wt.Access(i))
-		}
+		actual := wt.reconstruct()
 		if actual != str {
 			t.Fatalf("expected to rebuild:\n%s\nbut instead got:\n%s", str, actual)
 		}

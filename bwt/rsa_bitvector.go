@@ -90,6 +90,10 @@ func (rsa rsaBitVector) Access(i int) bool {
 	return rsa.bv.getBit(i)
 }
 
+func (rsa rsaBitVector) getBinStr() string {
+	return rsa.bv.toBinStr()
+}
+
 type chunk struct {
 	subChunks          []subChunk
 	onesCumulativeRank int

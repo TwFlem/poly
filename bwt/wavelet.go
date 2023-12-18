@@ -117,8 +117,9 @@ specific waveletTree works.
 // * locating characters of certain rank within the sequence
 // * accessing the character at a given position
 type waveletTree struct {
-	root  *node
-	alpha []charInfo
+	root                *node
+	alpha               []charInfo
+	originalSequenceLen int
 }
 
 // Access will return the ith character of the original
@@ -141,7 +142,10 @@ func (wt waveletTree) Access(i int) byte {
 // the original string
 func (wt waveletTree) Rank(char byte, i int) int {
 	curr := wt.root
-	ci := wt.lookupCharInfo(char)
+	ci, ok := wt.lookupCharInfo(char)
+	if !ok {
+		return 0
+	}
 	level := 0
 	var rank int
 	for !curr.isLeaf() {
@@ -162,7 +166,10 @@ func (wt waveletTree) Rank(char byte, i int) int {
 // in the original string given its rank.
 func (wt waveletTree) Select(char byte, rank int) int {
 	curr := wt.root
-	ci := wt.lookupCharInfo(char)
+	ci, ok := wt.lookupCharInfo(char)
+	if !ok {
+		return 0
+	}
 	level := 0
 
 	for !curr.isLeaf() {
@@ -190,14 +197,22 @@ func (wt waveletTree) Select(char byte, rank int) int {
 	return rank
 }
 
-func (wt waveletTree) lookupCharInfo(char byte) charInfo {
+// reconstruct is for debugging
+func (wt waveletTree) reconstruct() string {
+	str := ""
+	for i := 0; i < wt.originalSequenceLen; i++ {
+		str += string(wt.Access(i))
+	}
+	return str
+}
+
+func (wt waveletTree) lookupCharInfo(char byte) (charInfo, bool) {
 	for i := range wt.alpha {
 		if wt.alpha[i].char == char {
-			return wt.alpha[i]
+			return wt.alpha[i], true
 		}
 	}
-	msg := fmt.Sprintf("could not find character %s in alphabet %+v. this should not be possible and indicates that the WaveletTree is malformed", string(char), wt.alpha)
-	panic(msg)
+	return charInfo{}, false
 }
 
 type node struct {
@@ -225,8 +240,9 @@ func NewWaveletTreeFromString(str string) waveletTree {
 	root := buildWaveletTree(0, alpha, bytes)
 
 	return waveletTree{
-		root:  root,
-		alpha: alpha,
+		root:                root,
+		alpha:               alpha,
+		originalSequenceLen: len(str),
 	}
 }
 

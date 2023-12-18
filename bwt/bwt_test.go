@@ -41,15 +41,26 @@ func TestBWT_Count(t *testing.T) {
 
 	testTable := []BWTCountTestCase{
 		{"uick", 3},
-		{"the", 6},
 		{"over", 6},
 		{"own", 12},
 		{"ana", 6},
 		{"an", 9},
 		{"na", 9},
 		{"rown", 6},
+		{"frown", 3},
+		{"brown", 3},
+		{"all", 6},
+		{"alle", 3},
+		{"alla", 3},
+		{"l", 21},
+		{"the", 6},
+		{"town", 3},
 		{"townthe", 2},
+		{"nt", 5},
 		{"zzz", 0},
+		{"@", 0},
+		{"clown", 0},
+		{"overtly", 0},
 	}
 
 	for _, v := range testTable {
@@ -59,6 +70,16 @@ func TestBWT_Count(t *testing.T) {
 		}
 		if count != v.expected {
 			t.Fatalf("seq=%s expectedCount=%v actualCount=%v", v.seq, v.expected, count)
+		}
+	}
+
+	for _, v := range testTable {
+		count, err := bwt.CountV2(v.seq)
+		if err != nil {
+			t.Fatalf("V2 seq=%s unexpectedError=%s", v.seq, err)
+		}
+		if count != v.expected {
+			t.Fatalf("V2 seq=%s expectedCount=%v actualCount=%v", v.seq, v.expected, count)
 		}
 	}
 }
@@ -261,5 +282,86 @@ func TestBWT_Len(t *testing.T) {
 
 	if bwt.Len() != len(testStr) {
 		t.Fatalf("expected Len to be %d but got %d", len(testStr), bwt.Len())
+	}
+}
+
+type sparseOnesTestCase struct {
+	pos      int
+	expected int
+}
+
+func TestSparseOnesRS_RankOnes(t *testing.T) {
+	runs := runInfo{
+		6,
+		12,
+		33,
+		99,
+		204,
+		205,
+		300,
+		302,
+		305,
+		306,
+		999,
+	}
+
+	testCases := []sparseOnesTestCase{
+		{0, 0},
+		{4, 0},
+		{5, 0},
+		{6, 0},
+
+		{7, 0},
+		{8, 0},
+		{9, 0},
+		{11, 0},
+		{12, 1},
+
+		{13, 1},
+		{15, 1},
+		{22, 1},
+		{32, 1},
+		{33, 2},
+
+		{56, 2},
+		{64, 2},
+		{65, 2},
+		{79, 2},
+		{98, 2},
+		{99, 3},
+
+		{100, 3},
+		{112, 3},
+		{168, 3},
+		{197, 3},
+		{199, 3},
+		{203, 3},
+		{204, 4},
+
+		{205, 5},
+
+		{206, 5},
+		{271, 5},
+		{299, 5},
+		{300, 6},
+
+		{301, 6},
+		{302, 7},
+
+		{302, 7},
+		{303, 7},
+		{304, 7},
+		{305, 8},
+
+		{306, 9},
+
+		{999, 10},
+	}
+
+	for _, v := range testCases {
+		actual := runs.Rank(v.pos)
+		if actual != v.expected {
+			t.Fatalf("expected RankOnes(%d) to be %d but got %d", v.pos, v.expected, actual)
+		}
 	}
 }
