@@ -181,6 +181,8 @@ func TestRSARank_multipleChunks(t *testing.T) {
 		0xffffffffffffffff,
 		0x0000000000000000,
 
+		// If Jacobson rank is still there, this should go past the first
+		// chunk
 		0xffffffffffffffff,
 		0x0000000000000000,
 		0xffffffffffffffff,
@@ -201,6 +203,8 @@ func TestRSARank_multipleChunks(t *testing.T) {
 		0xffffffffffffffff,
 		0x0000000000000000,
 
+		// If Jacobson rank is still there, this should go past the second
+		// chunk
 		0xffffffffffffffff,
 		0x0000000000000000,
 		0xffffffffffffffff,
@@ -250,10 +254,10 @@ func TestRSASelect(t *testing.T) {
 	bitsToTruncate := 17
 	initialNumberOfBits := wordSize*4 - bitsToTruncate
 	rsa := newTestRSAFromWords(initialNumberOfBits,
-		0x8010000000010000,
-		0xfff1ffffffffffff,
-		0x0000010000000000,
-		0xffffffffffffffff,
+		0x8010000000010000, // 1Count = 3
+		0xfff1ffffffffffff, // 1Count = 63
+		0x0000010000000000, // 1Count = 1
+		0xffffffffffffffff, // Possible 1Count = 47
 	)
 
 	testCases := []rsaSelectTestCase{
@@ -281,11 +285,19 @@ func TestRSASelect(t *testing.T) {
 		{false, 63, 78},
 
 		{true, 64, 151},
-		{false, 64, 128},
-		{false, 126, 191},
-
 		{true, 65, 192},
 		{true, 111, 238},
+		{false, 64, 128},
+
+		{false, 126, 191},
+
+		// Select of penultimate ranks should be the positions at which they appear.
+		{true, 111, rsa.bv.len() - 1},
+		{false, 126, 191},
+
+		// Max bitvector positions for the max rank should be at the ends of the bitvector
+		{true, 112, rsa.bv.len()},
+		{false, 127, rsa.bv.len()},
 	}
 
 	for _, tc := range testCases {

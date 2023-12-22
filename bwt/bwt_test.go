@@ -1,29 +1,11 @@
 package bwt
 
 import (
-	"fmt"
-	"log"
 	"strings"
 	"testing"
 
 	"golang.org/x/exp/slices"
 )
-
-func ExampleBWT_Count() {
-	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
-
-	bwt, err := New(inputSequence)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	count, err := bwt.Count("CG")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(count)
-	// Output: 10
-}
 
 type BWTCountTestCase struct {
 	seq      string
@@ -57,11 +39,16 @@ func TestBWT_Count(t *testing.T) {
 		{"town", 3},
 		{"townthe", 2},
 		{"nt", 5},
+		// patterns that should not exist
 		{"zzz", 0},
 		{"@", 0},
 		{"clown", 0},
+		{"zzz", 0},
+		{"clown", 0},
+		{"crown", 0},
+		{"spark", 0},
+		{"brawn", 0},
 		{"overtly", 0},
-		{"", 340},
 	}
 
 	for _, v := range testTable {
@@ -75,21 +62,16 @@ func TestBWT_Count(t *testing.T) {
 	}
 }
 
-func ExampleBWT_Locate() {
-	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
-
-	bwt, err := New(inputSequence)
+func TestBWT_Count_EmptyPattern(t *testing.T) {
+	testStr := "banana"
+	bwt, err := New(testStr)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
-
-	offsets, err := bwt.Locate("CG")
-	if err != nil {
-		log.Fatal(err)
+	_, err = bwt.Count("")
+	if err == nil {
+		t.Fatal("Expected error for empty pattern but got nil")
 	}
-	slices.Sort(offsets)
-	fmt.Println(offsets)
-	// Output: [7 10 20 23 25 30 33 38 45 50]
 }
 
 type BWTLocateTestCase struct {
@@ -124,10 +106,15 @@ func TestBWT_Locate(t *testing.T) {
 		{"town", []int{109, 222, 335}},
 		{"townthe", []int{109, 222}},
 		{"nt", []int{108, 112, 221, 225, 334}},
+		{"overtly", nil},
+
+		// patterns that should not exist
 		{"zzz", nil},
 		{"@", nil},
 		{"clown", nil},
-		{"overtly", nil},
+		{"crown", nil},
+		{"spark", nil},
+		{"brawn", nil},
 	}
 
 	for _, v := range testTable {
@@ -147,20 +134,16 @@ func TestBWT_Locate(t *testing.T) {
 	}
 }
 
-func ExampleBWT_Extract() {
-	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
-
-	bwt, err := New(inputSequence)
+func TestBWT_Locate_EmptyPattern(t *testing.T) {
+	testStr := "banana"
+	bwt, err := New(testStr)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
-
-	extracted, err := bwt.Extract(48, 54)
-	if err != nil {
-		log.Fatal(err)
+	_, err = bwt.Locate("")
+	if err == nil {
+		t.Fatal("Expected error for empty pattern but got nil")
 	}
-	fmt.Println(extracted)
-	// Output: AACGTG
 }
 
 type BWTExtractTestCase struct {
@@ -244,6 +227,22 @@ func TestBWT_Extract(t *testing.T) {
 		if str != v.expected {
 			t.Fatalf("extractRange=(%d, %d) expected=%s actual=%s", v.start, v.end, v.expected, str)
 		}
+	}
+}
+
+func TestBWT_Extract_InvalidRanges(t *testing.T) {
+	testStr := "banana"
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = bwt.Extract(5, 4)
+	if err == nil {
+		t.Fatal("Expected error for invalid range but got nil")
+	}
+	_, err = bwt.Extract(4, 4)
+	if err == nil {
+		t.Fatal("Expected error for invalid range but got nil")
 	}
 }
 
@@ -365,5 +364,64 @@ func TestSparseOnesRS_RankOnes(t *testing.T) {
 		if actual != v.expected {
 			t.Fatalf("expected RankOnes(%d) to be %d but got %d", v.pos, v.expected, actual)
 		}
+	}
+}
+
+func TestNewBWTWithSequenceContainingNullChar(t *testing.T) {
+	nc := nullChar
+	testStr := "banana" + nc
+
+	_, err := New(testStr)
+	if err == nil {
+		t.Fatal("expected error but got nil")
+	}
+}
+
+func TestNewBWTEmptySequence(t *testing.T) {
+	testStr := ""
+
+	_, err := New(testStr)
+	if err == nil {
+		t.Fatal("expected error but got nil")
+	}
+}
+
+// TestBWTReconstruction this helps us ensure that the LF mapping is correct and that the suffix array lookup
+// must be well formed. Otherwise, we would not be able to recreate the original sequence.
+func TestBWTReconstruction(t *testing.T) {
+	baseTestStr := "thequickbrownfoxjumpsoverthelazydogwithanovertfrownafterfumblingitsparallelogramshapedbananagramallarounddowntown"
+	testStr := strings.Join([]string{baseTestStr, baseTestStr, baseTestStr}, "")
+
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	extracted, err := bwt.Extract(0, bwt.Len())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if extracted != testStr {
+		t.Log("Reconstruction failed")
+		t.Log("Expected:\t", testStr)
+		t.Log("Actual:\t", extracted)
+		t.Fail()
+	}
+
+	// This will either result in an even or all alphabet. The alphabet matters.
+	testStrWithOneMoreAlpha := testStr + "!"
+	bwt, err = New(testStrWithOneMoreAlpha)
+	if err != nil {
+		t.Fatal(err)
+	}
+	extracted, err = bwt.Extract(0, bwt.Len())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if extracted != testStrWithOneMoreAlpha {
+		t.Log("Reconstruction failed with extra alpha character")
+		t.Log("Expected:\t", testStr)
+		t.Log("Actual:\t", extracted)
+		t.Fail()
 	}
 }
