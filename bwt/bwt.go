@@ -297,7 +297,7 @@ func (bwt BWT) GetTransform() string {
 		currChar := bwt.runBWTCompression.Access(i)
 		var currCharEnd int
 		if i+1 >= len(bwt.runStartPositions) {
-			currCharEnd = bwt.runBWTCompression.originalSequenceLen
+			currCharEnd = bwt.getLenOfOriginalStringWithNullChar()
 		} else {
 			currCharEnd = bwt.runStartPositions[i+1]
 		}

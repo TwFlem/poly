@@ -282,7 +282,7 @@ func TestBWT_GetTransform(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := "nnnnnnnmmmrrrrrrrrrnnnbbbhhhhhhppplllllldddmmmkkkiiieeennnyyydddppphhhlllhhhtttvvvvvvnnntttaaarrrnnnaaaooooootttsssttttttuuulllwwwgggxxxcccllleeelllbbbaaaaaaeeeaaauuuuuuaaawwwwaaaaaauuuwwwiiiaaawwwwwllldddrrrnnnssstrrrrrrttdddfffsssaaammmeeeaaaggggggeeeaaafffbbbeeeeeemmmppptttfffrrriiirrrnn$nnniiiqqqfffjjjooooooooogggooooooooooooooozzz"
+	expected := "nnnnnnnmmmrrrrrrrrrnnnbbbhhhhhhppplllllldddmmmkkkiiieeennnyyydddppphhhlllhhhtttvvvvvvnnntttaaarrrnnnaaaooooootttsssttttttuuulllwwwgggxxxcccllleeelllbbbaaaaaaeeeaaauuuuuuaaawwwwaaaaaauuuwwwiiiaaawwwwwllldddrrrnnnssstrrrrrrttdddfffsssaaammmeeeaaaggggggeeeaaafffbbbeeeeeemmmppptttfffrrriiirrrnn$nnniiiqqqfffjjjooooooooogggooooooooooooooozzzaaa"
 	actual := bwt.GetTransform()
 	if expected != actual {
 		t.Fatalf("expected did not match actual\nexpected:\t%s\nactual:\t%s", expected, actual)
