@@ -208,10 +208,7 @@ func TestWaveletTree_Access_Reconstruction(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		actual := ""
-		for i := 0; i < len(str); i++ {
-			actual += string(wt.Access(i))
-		}
+		actual := wt.reconstruct()
 		if actual != str {
 			t.Fatalf("expected to rebuild:\n%s\nbut instead got:\n%s", str, actual)
 		}
@@ -266,4 +263,27 @@ func TestWaveletTreeSingleAlpha(t *testing.T) {
 	if a != str[0] {
 		t.Fatalf("expected Access(%d) to be %d but got %d", 1, 1, s)
 	}
+}
+func TestBuildWaveletTree_ZeroAlpha(t *testing.T) {
+	bytes := []byte("AAAACCCCTTTTGGGG")
+	alpha := []charInfo{}
+
+	root := buildWaveletTree(0, alpha, bytes)
+
+	if root != nil {
+		t.Fatalf("expected root to be nil but got %v", root)
+	}
+}
+func TestWaveletTree_LookupCharInfo_Panic(t *testing.T) {
+	wt := waveletTree{
+		alpha: []charInfo{},
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("expected panic but got nil")
+		}
+	}()
+
+	wt.lookupCharInfo('B')
 }

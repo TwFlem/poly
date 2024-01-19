@@ -273,6 +273,22 @@ func TestBWT_Extract_DoNotAllowExtractionOfLastNullChar(t *testing.T) {
 	}
 }
 
+func TestBWT_GetTransform(t *testing.T) {
+	baseTestStr := "thequickbrownfoxjumpsoverthelazydogwithanovertfrownafterfumblingitsparallelogramshapedbananagramallarounddowntown" // len == 112
+	testStr := strings.Join([]string{baseTestStr, baseTestStr, baseTestStr}, "")
+
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := "nnnnnnnmmmrrrrrrrrrnnnbbbhhhhhhppplllllldddmmmkkkiiieeennnyyydddppphhhlllhhhtttvvvvvvnnntttaaarrrnnnaaaooooootttsssttttttuuulllwwwgggxxxcccllleeelllbbbaaaaaaeeeaaauuuuuuaaawwwwaaaaaauuuwwwiiiaaawwwwwllldddrrrnnnssstrrrrrrttdddfffsssaaammmeeeaaaggggggeeeaaafffbbbeeeeeemmmppptttfffrrriiirrrnn$nnniiiqqqfffjjjooooooooogggooooooooooooooozzz"
+	actual := bwt.GetTransform()
+	if expected != actual {
+		t.Fatalf("expected did not match actual\nexpected:\t%s\nactual:\t%s", expected, actual)
+	}
+}
+
 func TestBWT_Len(t *testing.T) {
 	testStr := "banana"
 
@@ -424,4 +440,98 @@ func TestBWTReconstruction(t *testing.T) {
 		t.Log("Actual:\t", extracted)
 		t.Fail()
 	}
+}
+
+func TestBWTStartError(t *testing.T) {
+	testStr := "banana"
+
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = bwt.Extract(-1, 6)
+	if err == nil {
+		t.Fatal("expected error but got nil")
+	}
+}
+func TestBWT_GetFCharPosFromOriginalSequenceCharPos_Panic(t *testing.T) {
+	testStr := "banana"
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Call the function with an invalid original position
+	originalPos := -1
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but it did not occur")
+		}
+	}()
+	bwt.getFCharPosFromOriginalSequenceCharPos(originalPos)
+}
+func TestBWT_LFSearch_InvalidChar(t *testing.T) {
+	testStr := "banana"
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pattern := "x" // Invalid character
+
+	result := bwt.lfSearch(pattern)
+
+	if result.start != 0 || result.end != 0 {
+		t.Fatalf("Expected search range to be (0, 0), but got (%d, %d)", result.start, result.end)
+	}
+}
+func TestBWT_LookupSkipByOffset_PanicOffsetExceedsMaxBound(t *testing.T) {
+	testStr := "banana"
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	offset := bwt.getLenOfOriginalStringWithNullChar()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but it did not occur")
+		}
+	}()
+	bwt.lookupSkipByOffset(offset)
+}
+
+func TestBWT_LookupSkipByOffset_PanicOffsetExceedsMinBound(t *testing.T) {
+	testStr := "banana"
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	offset := -1
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but it did not occur")
+		}
+	}()
+	bwt.lookupSkipByOffset(offset)
+}
+
+func TestBWTRecovery(t *testing.T) {
+	// Test panic recovery for bwtRecovery function
+	var err error
+	operation := "test operation"
+
+	defer func() {
+		if err == nil {
+			t.Fatal("expected bwtRecovery to recover from the panic and set an error message, but got nil")
+		}
+	}()
+	defer bwtRecovery(operation, &err)
+	doPanic()
+}
+
+func doPanic() {
+	panic("test panic")
 }

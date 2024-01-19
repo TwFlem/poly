@@ -289,6 +289,25 @@ func (bwt BWT) Len() int {
 	return bwt.getLenOfOriginalStringWithNullChar() - 1
 }
 
+// GetTransform returns the last column of the BWT transform of the original sequence.
+func (bwt BWT) GetTransform() string {
+	lastColumn := strings.Builder{}
+	lastColumn.Grow(bwt.getLenOfOriginalStringWithNullChar())
+	for i := 0; i < bwt.runBWTCompression.originalSequenceLen; i++ {
+		currChar := bwt.runBWTCompression.Access(i)
+		var currCharEnd int
+		if i+1 >= len(bwt.runStartPositions) {
+			currCharEnd = bwt.runBWTCompression.originalSequenceLen
+		} else {
+			currCharEnd = bwt.runStartPositions[i+1]
+		}
+		for lastColumn.Len() < currCharEnd {
+			lastColumn.WriteByte(currChar)
+		}
+	}
+	return lastColumn.String()
+}
+
 // getFCharPosFromOriginalSequenceCharPos looks up mapping from the original position
 // of the sequence to its corresponding position in the First Column of the BWT
 // NOTE: This clearly isn't ideal. Instead of improving this implementation, this will be replaced with
@@ -306,6 +325,7 @@ func (bwt BWT) getFCharPosFromOriginalSequenceCharPos(originalPos int) int {
 // Finds the valid range within the BWT index where the provided pattern is possible.
 // If the final range is <= 0, then the pattern does not exist in the original sequence.
 func (bwt BWT) lfSearch(pattern string) interval {
+	fmt.Println(bwt.GetTransform())
 	searchRange := interval{start: 0, end: bwt.getLenOfOriginalStringWithNullChar()}
 	for i := 0; i < len(pattern); i++ {
 		if searchRange.end-searchRange.start <= 0 {
@@ -376,12 +396,13 @@ func (bwt BWT) lookupSkipByOffset(offset int) skipEntry {
 		panic(msg)
 	}
 
-	for i := range bwt.firstColumnSkipList {
-		if bwt.firstColumnSkipList[i].openEndedInterval.start <= offset && offset < bwt.firstColumnSkipList[i].openEndedInterval.end {
-			return bwt.firstColumnSkipList[i]
+	for skipIndex := range bwt.firstColumnSkipList {
+		if bwt.firstColumnSkipList[skipIndex].openEndedInterval.start <= offset && offset < bwt.firstColumnSkipList[skipIndex].openEndedInterval.end {
+			return bwt.firstColumnSkipList[skipIndex]
 		}
 	}
-	panic("Unable to find skip list entry by offset. This indicates improper usage or a malformed BWT.")
+	msg := fmt.Sprintf("could not find the skip entry that falls within the range of the skip column at a given offset. range: [0, %d) offset: %d", bwt.getLenOfOriginalStringWithNullChar(), offset)
+	panic(msg)
 }
 
 func (bwt BWT) getLenOfOriginalStringWithNullChar() int {
