@@ -40,9 +40,7 @@ func TestBWT_Count(t *testing.T) {
 		{"townthe", 2},
 		{"nt", 5},
 		// patterns that should not exist
-		{"zzz", 0},
 		{"@", 0},
-		{"clown", 0},
 		{"zzz", 0},
 		{"clown", 0},
 		{"crown", 0},

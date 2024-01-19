@@ -200,10 +200,10 @@ type BWT struct {
 	runBWTCompression waveletTree
 	// runStartPositions are the starting position of each run in the original sequence
 	// For example:
-	// "annb$aa" will have the runStartPositions [0, 1, 3, 4]
+	// "annb$aa" will have the runStartPositions [0, 1, 3, 4, 5]
 	// This helps us map our search range from "uncompressed BWT Space" to its
 	// "compressed BWT Run Space". With this, we can understand which runs we need
-	// to consider during FL mapping.
+	// to consider during LF mapping.
 	runStartPositions runInfo
 	// runCumulativeCounts is the cumulative count of characters for each run.
 	// This helps us efficiently lookup the number of occurrences of a given
@@ -293,7 +293,7 @@ func (bwt BWT) Len() int {
 func (bwt BWT) GetTransform() string {
 	lastColumn := strings.Builder{}
 	lastColumn.Grow(bwt.getLenOfOriginalStringWithNullChar())
-	for i := 0; i < bwt.runBWTCompression.originalSequenceLen; i++ {
+	for i := 0; i < bwt.runBWTCompression.length; i++ {
 		currChar := bwt.runBWTCompression.Access(i)
 		var currCharEnd int
 		if i+1 >= len(bwt.runStartPositions) {
@@ -325,7 +325,6 @@ func (bwt BWT) getFCharPosFromOriginalSequenceCharPos(originalPos int) int {
 // Finds the valid range within the BWT index where the provided pattern is possible.
 // If the final range is <= 0, then the pattern does not exist in the original sequence.
 func (bwt BWT) lfSearch(pattern string) interval {
-	fmt.Println(bwt.GetTransform())
 	searchRange := interval{start: 0, end: bwt.getLenOfOriginalStringWithNullChar()}
 	for i := 0; i < len(pattern); i++ {
 		if searchRange.end-searchRange.start <= 0 {

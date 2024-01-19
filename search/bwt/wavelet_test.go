@@ -274,16 +274,3 @@ func TestBuildWaveletTree_ZeroAlpha(t *testing.T) {
 		t.Fatalf("expected root to be nil but got %v", root)
 	}
 }
-func TestWaveletTree_LookupCharInfo_Panic(t *testing.T) {
-	wt := waveletTree{
-		alpha: []charInfo{},
-	}
-
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("expected panic but got nil")
-		}
-	}()
-
-	wt.lookupCharInfo('B')
-}

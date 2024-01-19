@@ -145,9 +145,9 @@ specific waveletTree works.
 // * locating characters of certain rank within the sequence
 // * accessing the character at a given position
 type waveletTree struct {
-	root                *node
-	alpha               []charInfo
-	originalSequenceLen int
+	root   *node
+	alpha  []charInfo
+	length int
 }
 
 // Access will return the ith character of the original
@@ -244,7 +244,7 @@ func (wt waveletTree) Select(char byte, rank int) int {
 
 func (wt waveletTree) reconstruct() string {
 	str := ""
-	for i := 0; i < wt.originalSequenceLen; i++ {
+	for i := 0; i < wt.length; i++ {
 		str += string(wt.Access(i))
 	}
 	return str
@@ -299,9 +299,9 @@ func newWaveletTreeFromString(str string) (waveletTree, error) {
 	}
 
 	return waveletTree{
-		root:                root,
-		alpha:               alpha,
-		originalSequenceLen: len(str),
+		root:   root,
+		alpha:  alpha,
+		length: len(str),
 	}, nil
 }
 
